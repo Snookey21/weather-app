@@ -1,61 +1,45 @@
-const apiKey = 'YOUR_API_KEY'; // Replace with your API key
+const apikey = "5d91285ea37914af9e52f11601d66b4b";
+const weatherDataEl = document.getElementById("weather-data");
+const cityInputEl = document.getElementById("city-input");
+const formEl = document.querySelector("form");
 
-const submitButton = document.getElementById('submit-btn');
-const locationInput = document.getElementById('location-input');
-const currentWeatherDiv = document.getElementById('current-weather');
-const forecastWeatherDiv = document.getElementById('forecast-weather');
-
-submitButton.addEventListener('click', () => {
-  const location = locationInput.value;
-  if (location.trim() === '') {
-    alert('Please enter a location');
-    return;
-  }
-
-  fetchWeather(location);
+formEl.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const cityValue = cityInputEl.value;
+  getWeatherData(cityValue);
 });
 
-async function fetchWeather(location) {
+async function getWeatherData(cityValue) {
   try {
-    // Fetch current weather data
-    const currentWeatherURL = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${location}&aqi=no`;
-    const currentWeatherResponse = await fetch(currentWeatherURL);
-    const currentWeatherData = await currentWeatherResponse.json();
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${cityValue}&appid=${apikey}&units=metric`
+    );
 
-    // Fetch forecast weather data
-    const forecastWeatherURL = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${location}&days=3`;
-    const forecastWeatherResponse = await fetch(forecastWeatherURL);
-    const forecastWeatherData = await forecastWeatherResponse.json();
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
 
-    // Display current weather
-    displayCurrentWeather(currentWeatherData);
+    const data = await response.json();
+    const temperature = Math.round(data.main.temp);
+    const description = data.weather[0].description;
+    const icon = data.weather[0].icon;
 
-    // Display forecast weather
-    displayForecastWeather(forecastWeatherData);
+    const details = [
+      `Feels like: ${Math.round(data.main.feels_like)}`,
+      `Humidity: ${data.main.humidity}%`,
+      `Wind speed: ${data.wind.speed} m/s`,
+    ];
+
+    weatherDataEl.querySelector( ".icon" ).innerHTML = `<img src="http://openweathermap.org/img/wn/${icon}.png" alt="Weather Icon">`;
+    weatherDataEl.querySelector(".temperature").textContent = `${temperature}°C`;
+    weatherDataEl.querySelector(".description").textContent = description;
+
+    weatherDataEl.querySelector(".details").innerHTML = details.map((detail) => `<div>${detail}</div>`).join("");
   } catch (error) {
-    console.log('Error:', error);
-    alert('An error occurred while fetching weather data');
+    weatherDataEl.querySelector(".icon").innerHTML = "";
+    weatherDataEl.querySelector(".temperature").textContent = "";
+    weatherDataEl.querySelector(".description").textContent =
+      "An error happened, please try again later";
+      weatherDataEl.querySelector(".details").innerHTML = "";
   }
 }
-
-function displayCurrentWeather(data) {
-  const location = data.location.name;
-  const tempC = data.current.temp_c;
-  const condition = data.current.condition.text;
-
-  currentWeatherDiv.innerHTML = `
-    <h3>Current Weather</h3>
-    <p>Location: ${location}</p>
-    <p>Temperature: ${tempC}°C</p>
-    <p>Condition: ${condition}</p>
-  `;
-}
-
-function displayForecastWeather(data) {
-  const forecast = data.forecast.forecastday;
-  let forecastHTML = '<h3>Forecast Weather</h3>';
-
-  forecast.forEach(day => {
-    const date = day.date;
-    const maxTempC = day.day.maxtemp_c;
-    const minTempC = day
